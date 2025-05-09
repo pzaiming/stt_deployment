@@ -1,0 +1,14 @@
+FROM python:3.10-slim
+
+WORKDIR /code
+
+RUN pip3 install 'fastapi[standard]' 
+RUN pip3 install "uvicorn[standard]" 
+RUN pip3 install sqlalchemy 
+RUN pip3 install psycopg2-binary pydantic
+RUN pip3 install pytz
+
+COPY . /code/app
+
+
+CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "80"]

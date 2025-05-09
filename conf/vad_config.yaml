@@ -1,0 +1,5 @@
+model: silero # or "pyannote"
+threshold: 0.28
+min_speech_duration_ms: 250
+max_speech_duration_s: 30
+min_silence_duration_ms: 160

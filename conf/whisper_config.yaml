@@ -1,0 +1,3 @@
+use_vad: True
+use_stt: True
+language: null

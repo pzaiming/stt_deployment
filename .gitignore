@@ -1,0 +1,11 @@
+api/app/hub
+__pycache__
+**/input/
+**/output/
+**/cache/
+*.wav
+whisper
+*.tar.gz
+*.tgz
+out
+temp*

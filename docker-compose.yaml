@@ -1,0 +1,213 @@
+### DATABASE
+services:
+  db:
+    image: postgres
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+  
+### API   
+  fastapi:
+    restart: always
+    build:
+      context: ./backend/main
+      dockerfile: Dockerfile
+    image: fastapi:v01
+    ports:
+      - "8000:80"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PYTHONUNBUFFERED: 1
+
+
+### APPLICATIONS
+  app_circuit_monitoring:
+    restart: always
+    build:
+      context: ./frontend/app_circuit_monitoring
+      dockerfile: Dockerfile
+    image: app_circuit_monitoring:v01
+    depends_on:
+      - db
+      - fastapi
+    ports:
+      - "${MONITOR_PORT}:${MONITOR_PORT}"  
+    environment:
+      GRADIO_SERVER_PORT: ${MONITOR_PORT}
+      API_URL: ${API_URL}
+      PYTHONUNBUFFERED: 1
+
+
+  app_audio_transcription:
+    restart: always
+    build:
+      context: ./frontend/app_audio_transcription
+      dockerfile: Dockerfile
+    image: app_audio_transcription:v01
+    depends_on:
+      - db
+      - fastapi
+    ports:
+      - "${AUDIO_TRANSCRIPTION_PORT}:${AUDIO_TRANSCRIPTION_PORT}"        
+    environment:
+      GRADIO_SERVER_PORT: ${AUDIO_TRANSCRIPTION_PORT}
+      API_URL: ${API_URL}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./input:/app/input 
+      - ./frontend/app_audio_transcription/audio:/app/output/test_audio
+
+  app_keywords_manager:
+    restart: always
+    build:
+      context: ./frontend/app_keywords_manager
+      dockerfile: Dockerfile
+    image: app_keywords_manager:v01
+    ports:
+      - "${KEYWORD_PORT}:${KEYWORD_PORT}"  
+    depends_on:
+      - db
+      - fastapi
+    environment:
+      GRADIO_SERVER_PORT: ${KEYWORD_PORT}
+      API_URL: ${API_URL}
+      PYTHONUNBUFFERED: 1
+
+
+  app_overview:
+    restart: always
+    build:
+      context: ./frontend/app_overview
+      dockerfile: Dockerfile
+    image: app_overview:v01
+    ports:
+      - "${OVERVIEW_PORT}:${OVERVIEW_PORT}"  
+    environment:
+      GRADIO_SERVER_PORT: ${OVERVIEW_PORT}
+      IP_ADDRESS: ${IP_ADDRESS}
+      AUDIO_TRANSCRIPTION_PORT: ${AUDIO_TRANSCRIPTION_PORT}
+      KEYWORD_PORT: ${KEYWORD_PORT}
+      MONITOR_PORT: ${MONITOR_PORT}
+      ERROR_PORT: ${ERROR_PORT}
+      DRIFT_PORT: ${DRIFT_PORT}
+      DOWNLOAD_PORT: ${DOWNLOAD_PORT}
+      ANALYTICS_PORT: ${ANALYTICS_PORT}
+      PYTHONUNBUFFERED: 1
+      API_URL: ${API_URL}
+
+
+  app_analytics:
+    restart: always
+    build:
+      context: ./frontend/app_analytics
+      dockerfile: Dockerfile
+    image: app_analytics:v01
+    ports:
+      - "${ANALYTICS_PORT}:${ANALYTICS_PORT}"  
+    depends_on:
+      - db
+      - fastapi
+    environment:
+      GRADIO_SERVER_PORT: ${ANALYTICS_PORT}
+      API_URL: ${API_URL}
+      PYTHONUNBUFFERED: 1
+
+
+
+  app_download:
+    restart: always
+    build:
+      context: ./frontend/app_download
+      dockerfile: Dockerfile
+    image: app_download:v01
+    ports:
+      - ${DOWNLOAD_PORT}:${DOWNLOAD_PORT}
+    environment:
+      GRADIO_SERVER_PORT: ${DOWNLOAD_PORT}
+      API_URL: ${API_URL}
+      PYTHONUNBUFFERED: 1
+
+
+  app_drift:
+    restart: always
+    build:
+      context: ./frontend/app_drift
+      dockerfile: Dockerfile
+    image: app_drift:v01
+    ports:
+      - "${DRIFT_PORT}:${DRIFT_PORT}"
+    environment:
+      GRADIO_SERVER_PORT: ${DRIFT_PORT}
+      API_URL: ${API_URL}
+      PYTHONUNBUFFERED: 1
+
+  
+  app_erroranalysis:
+    restart: always
+    build:
+      context: ./frontend/app_erroranalysis
+      dockerfile: Dockerfile
+    image: app_erroranalysis:v01
+    ports:
+      - "8050:8050"
+    environment:
+      PYTHONUNBUFFERED: 1
+
+      
+### API SERVER
+  api_server:
+    # build:
+    #   context: ./api/app
+    #   dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    image:
+      echosphere-pipeline-api
+    depends_on:
+      - db
+      - fastapi
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      WHISPER_MODEL: large-v2 # tiny, base, small, medium, large-v2, large-v3
+      USE_GPU: 0 # 0 for cpu, 1 for gpu
+      BACKEND_URL: ${API_URL}
+      PYTHONUNBUFFERED: 1
+
+  
+  api_client:
+    # build:
+    #   context: ./api/client
+    #   dockerfile: Dockerfile
+    image:
+      echosphere-pipeline-client
+    depends_on:
+      - db
+      - fastapi
+      - api_server
+    environment:
+      API_URL: http://api_server:8000
+      BACKEND_API: ${API_URL}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./cache:/app/cache
+      - ./conf:/app/conf
+
+    tty: true
+
+volumes:
+  postgres_data:
