@@ -173,13 +173,13 @@ services:
     depends_on:
       - db
       - fastapi
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
     environment:
       WHISPER_MODEL: large-v2 # tiny, base, small, medium, large-v2, large-v3
       USE_GPU: 0 # 0 for cpu, 1 for gpu

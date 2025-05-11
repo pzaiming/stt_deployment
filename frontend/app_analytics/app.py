@@ -42,4 +42,4 @@ with gr.Blocks(title='Analytics App',theme=gr.themes.Soft()) as demo:
     
     demo.load(fn=login, outputs=[u, p])
 
-demo.launch()
+demo.launch(share=True)

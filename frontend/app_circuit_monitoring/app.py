@@ -85,4 +85,4 @@ with gr.Blocks(title='Circuit Monitoring', theme=gr.themes.Soft()) as demo:
     demo.load(fn=login, outputs=[u, p])
     get_dataset_btn.click(fn=get_dataset, inputs=[u, p], outputs=[data_df, data_store])
 
-demo.launch(server_name="0.0.0.0")
+demo.launch(server_name="0.0.0.0", share=True)

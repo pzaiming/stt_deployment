@@ -99,4 +99,4 @@ with gr.Blocks(title='Keyword Manager', theme=gr.themes.Soft()) as demo:
 
     demo.load(fn=login, outputs=[u, p])
 
-demo.launch(server_name="0.0.0.0")
+demo.launch(server_name="0.0.0.0", share=True)
